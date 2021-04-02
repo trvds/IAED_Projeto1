@@ -29,6 +29,12 @@ void ListTarefas(struct tarefa tarefas[], int id_tarefa, char activity[][USER_AC
 void order_descriptions(struct tarefa temp_tarefas[], int id_tarefa);
 int TimeUpdate(int time);
 void AddUserActivity(char tab[][USER_ACTIVITY_SIZE], int choice);
+void MoveTask(struct tarefa tarefas[], char users[][USER_ACTIVITY_SIZE],
+                char activities[][USER_ACTIVITY_SIZE], int id_tarefa, int time);
+int MoveTask_argcheck(char argument[], char tab[][USER_ACTIVITY_SIZE], int max_size);
+void ListActivities(struct tarefa tarefas[], char activities[][USER_ACTIVITY_SIZE], int id_tarefa);
+
+
 
 int main()
 {
@@ -64,12 +70,10 @@ int main()
                 AddUserActivity(users, 1);
                 break; 
             case('m'):
-                scanf("%s", str);
-                printf("%s, m", str);
-                break;; 
+                MoveTask(tarefas, users, activity, id_tarefa, time);
+                break;
             case('d'):
-                scanf("%s", str);
-                printf("%s, d", str);
+                ListActivities(tarefas, activity, id_tarefa);
                 break;   
             case('a'):
                 AddUserActivity(activity, 2);
@@ -93,12 +97,12 @@ void AddTarefa(struct tarefa tarefas[], int id_tarefa, int time)
     struct tarefa nova_tarefa;
 
     /* entrada */
-    scanf(" %d %[^\n]s", &nova_tarefa.duration, nova_tarefa.description);
+    scanf("%d %[^\n]s", &nova_tarefa.duration, nova_tarefa.description);
     
     /* Verificar se já ha uma descricao igual*/
-    for(int i; i < id_tarefa; i++)
+    for(int i = 0; i < id_tarefa; i++)
     {
-        if (strcmp(tarefas[i].description, nova_tarefa.description))
+        if (strcmp(tarefas[i].description, nova_tarefa.description) == 0)
         {
             printf("duplicate description\n");
             return;
@@ -115,7 +119,6 @@ void AddTarefa(struct tarefa tarefas[], int id_tarefa, int time)
     /* Fornecer as restantes caracteristicas da tarefa */
     nova_tarefa.id = id_tarefa;
     strcpy(nova_tarefa.activity, "TO DO");
-    nova_tarefa.time = time;
 
     /* Inserir a tarefa no vetor */
     tarefas[id_tarefa] = nova_tarefa;
@@ -301,3 +304,130 @@ void AddUserActivity(char tab[][USER_ACTIVITY_SIZE], int choice)
     }
 }
 
+
+void MoveTask(struct tarefa tarefas[], char users[][USER_ACTIVITY_SIZE],
+                char activities[][USER_ACTIVITY_SIZE], int id_tarefa, int time)
+{
+    int id;
+    char user[USER_ACTIVITY_SIZE], activity[USER_ACTIVITY_SIZE];
+
+    scanf("%d %s %[^\n]s", &id, user, activity);
+
+    /* verificar se o id da tarefa e valido */
+    if(id_tarefa < id)
+    {
+        printf("no such task\n");
+        return;
+    }
+
+    /* verificar se a atividade nao e a "TO DO" */
+    if (strcmp(activities[0], activity) == 0)
+    {
+        printf("task already started\n");
+        return;
+    }
+
+    /* verificar se o utilizador introduzidO existe */
+    if(MoveTask_argcheck(user, users, MAX_USERS) != 0)
+    {
+        printf("no such user\n");
+        return;
+    }
+
+    /* verificar se a atividade introduzida existe */
+    if(MoveTask_argcheck(activity, activities, MAX_ACTIVITY) != 0)
+    {
+        printf("no such activity\n");
+        return;
+    }
+
+    /* se a tarefa estiver inicialmente em "TO DO" marcar o tempo */
+    if(strcmp(tarefas[id].activity, activities[0]) == 0)
+        tarefas[id].time = time;
+    
+    /* se a tarefa for para "DONE" */
+    if(strcmp(activity, activities[2]) == 0)
+    {
+        int slack, tarefa_duration;
+        tarefa_duration = time - tarefas[id].time;
+        slack = tarefa_duration - tarefas[id].duration;
+        printf("duration=%d slack=%d\n", tarefa_duration, slack);
+    }
+
+    strcpy(tarefas[id].activity, activity);
+    strcpy(tarefas[id].user, user);
+}
+
+/* funcao que verifica se o user e a activity existem */
+int MoveTask_argcheck(char argument[], char tab[][USER_ACTIVITY_SIZE], int max_size)
+{
+    for(int i = 0; i < max_size; i++)
+    {
+        if(strcmp(tab[i], argument) == 0)
+            return 0;
+    }
+    return 1;
+}
+
+
+void ListActivities(struct tarefa tarefas[], char activities[][USER_ACTIVITY_SIZE], int id_tarefa)
+{
+    /* Inicializacao de variaveis*/
+    int ids[MAX_TAREFAS];
+    char activity[USER_ACTIVITY_SIZE];
+    char c;
+    int i = 0, j, temp_counter = 0, temp_id, temp_time;
+    struct tarefa temp_tarefas[MAX_TAREFAS];
+    char temp_str[DESCRIPTION_SIZE];
+    
+    /* buscar argumento */
+    getchar();
+    scanf("%[^\n]s", activity);
+    
+    /* verificar argumento */
+    if(MoveTask_argcheck(activity, activities, MAX_ACTIVITY) != 0)
+    {
+        printf("no such activity\n");
+        return;
+    }
+
+    /* mudar para um array temporario as tarefas em certa atividade */
+    for(i = 0; i < id_tarefa; i++)
+    {
+        if(strcmp(tarefas[i].activity, activity) == 0)
+        {
+            temp_tarefas[temp_counter].id = tarefas[i].id;
+            temp_tarefas[temp_counter].time = tarefas[i].time;
+            strcpy(temp_tarefas[temp_counter].description, tarefas[i].description);
+            temp_counter++;
+        }
+    }
+
+    /* organizar o array */
+    for(i=0; i < temp_counter; i++)
+    {
+        for(j = i+1; j < temp_counter; j++)
+        {
+            if( temp_tarefas[i].time > temp_tarefas[j].time || 
+                (temp_tarefas[i].time == temp_tarefas[j].time 
+                &&
+                (strcmp(temp_tarefas[i].description ,temp_tarefas[j].description)) > 0))
+            {
+                /* so precisamos de ordenar as descricoes, o tempo e os ids */
+                strcpy(temp_str, temp_tarefas[i].description);
+                temp_id = temp_tarefas[i].id;
+                temp_time = temp_tarefas[i].time;
+                strcpy(temp_tarefas[i].description, temp_tarefas[j].description);
+                temp_tarefas[i].id = temp_tarefas[j].id;
+                temp_tarefas[i].time = temp_tarefas[j].time;
+                strcpy(temp_tarefas[j].description, temp_str);
+                temp_tarefas[j].id = temp_id;
+                temp_tarefas[j].time = temp_time;
+            }
+        }
+    }
+
+    /* saida */
+    for(i = 0; i < temp_counter; i++)
+        printf("%d %d %s\n", temp_tarefas[i].id, temp_tarefas[i].time, temp_tarefas[i].description);
+}
