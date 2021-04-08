@@ -4,12 +4,16 @@
 #include <string.h>
 
 #define MAX_INPUT 100
-#define DESCRIPTION_SIZE 50
-#define USER_ACTIVITY_SIZE 20
+#define DESCRIPTION_SIZE 51
+#define USER_ACTIVITY_SIZE 21
 
 #define MAX_USERS 50
 #define MAX_TAREFAS 10000
 #define MAX_ACTIVITY 10
+
+#define MIN_TAREFAS 1
+
+#define MIN_USER_ACTIVITY 0
 
 
 
@@ -24,8 +28,8 @@ struct tarefa
     int time;
 };
 
-void AddTarefa(struct tarefa tarefas[], int id_tarefa, int time);
-void ListTarefas(struct tarefa tarefas[], int id_tarefa, char activity[][USER_ACTIVITY_SIZE]);
+int AddTarefa(struct tarefa tarefas[], int id_tarefa, char activity[USER_ACTIVITY_SIZE]);
+void ListTarefas(struct tarefa tarefas[], int id_tarefa);
 void order_descriptions(struct tarefa temp_tarefas[], int id_tarefa);
 int TimeUpdate(int time);
 void AddUserActivity(char tab[][USER_ACTIVITY_SIZE], int choice);
@@ -40,28 +44,26 @@ int main()
 {
     /* inicializacao das variaveis*/
     
-    struct tarefa tarefas[MAX_TAREFAS];
-    int id_tarefa = 0;  
+    struct tarefa tarefas[MAX_TAREFAS + 1];
+    int i, id_tarefa = MIN_TAREFAS;  
     
-    char users[MAX_USERS][USER_ACTIVITY_SIZE]; 
-    for(int i = 0; i < MAX_USERS; i++)
-        strcpy(users[i], "\0");
-
+    char users[MAX_USERS][USER_ACTIVITY_SIZE];
     char activity[MAX_ACTIVITY][USER_ACTIVITY_SIZE] = 
     { "TO DO", "IN PROGRESS", "DONE", "\0", "\0", "\0", "\0", "\0", "\0", "\0"};
     int time = 0;
-    
-    char str[MAX_INPUT];
     char command;
+
+    for(i = 0; i < MAX_USERS; i++)
+        strcpy(users[i], "\0");
+
     while((command = getchar()) != 'q'){
         switch(command)
         {
             case('t'):
-                AddTarefa(tarefas, id_tarefa, time);
-                id_tarefa++;
+                id_tarefa = AddTarefa(tarefas, id_tarefa, activity[0]);
                 break; 
             case('l'):
-                ListTarefas(tarefas, id_tarefa, activity);
+                ListTarefas(tarefas, id_tarefa);
                 break; 
             case('n'):
                 time = TimeUpdate(time);
@@ -84,28 +86,32 @@ int main()
 }
 
 
-void AddTarefa(struct tarefa tarefas[], int id_tarefa, int time)
+int AddTarefa(struct tarefa tarefas[], int id_tarefa, char activity[USER_ACTIVITY_SIZE])
 {
-    /* Verificar se já se chegou ao maximo de tarefas */
-    if (id_tarefa > MAX_TAREFAS)
-    {
-        printf("too many tasks\n");
-        return;
-    }
-    
+    int i;
     /* Criar nova tarefa para depois ser introduzida no vector das tarefas */
     struct tarefa nova_tarefa;
 
     /* entrada */
-    scanf("%d %[^\n]s", &nova_tarefa.duration, nova_tarefa.description);
+    scanf("%d", &nova_tarefa.duration);
+    getchar();
+    scanf("%[^\n]s", nova_tarefa.description);
+
+
+    /* Verificar se já se chegou ao maximo de tarefas */
+    if (id_tarefa > MAX_TAREFAS)
+    {
+        printf("too many tasks\n");
+        return id_tarefa;
+    }
     
     /* Verificar se já ha uma descricao igual*/
-    for(int i = 0; i < id_tarefa; i++)
+    for(i = MIN_TAREFAS; i < id_tarefa; i++)
     {
         if (strcmp(tarefas[i].description, nova_tarefa.description) == 0)
         {
             printf("duplicate description\n");
-            return;
+            return id_tarefa;
         }
     }
     
@@ -113,65 +119,67 @@ void AddTarefa(struct tarefa tarefas[], int id_tarefa, int time)
     if(nova_tarefa.duration <= 0)
         {
         printf("invalid duration\n");
-        return;
+        return id_tarefa;
         }
 
     /* Fornecer as restantes caracteristicas da tarefa */
     nova_tarefa.id = id_tarefa;
-    strcpy(nova_tarefa.activity, "TO DO");
+    strcpy(nova_tarefa.activity, activity);
+    nova_tarefa.time = 0;
 
     /* Inserir a tarefa no vetor */
     tarefas[id_tarefa] = nova_tarefa;
-    
+
     /* saída */
     printf("task %d\n", tarefas[id_tarefa].id);
-    return;
+    id_tarefa++;
+    return id_tarefa;
 }
 
 
-void ListTarefas(struct tarefa tarefas[], int id_tarefa, char activity[][USER_ACTIVITY_SIZE])
+void ListTarefas(struct tarefa tarefas[], int id_tarefa)
 {
     /* Inicializacao de variaveis*/
-    int ids[MAX_TAREFAS];
     char c;
-    int i = 0;
+    int ids[MAX_TAREFAS];
+    int i, k, j;
+        /* Variavel para verificar se o ID existe */
+    int id_existence = 1;
 
     /* Verificar se o comando tem argumentos*/
-    if((c = getchar()) == ' ' && (c = getchar()) == '[')
+    if((c = getchar()) == ' ')
     {
+        i = MIN_TAREFAS;
         do
         {
         scanf("%d", &ids[i]);
         i++;
-        } while (getchar() != ']');
+        } while (getchar() == ' ');
     }
     else
     {
         /* Inicializacao da copia do array de tarefas */
         struct tarefa temp_tarefas[MAX_TAREFAS];
-        for (i = 0; i < id_tarefa; i++)
+        for (i = MIN_TAREFAS; i < id_tarefa; i++)
             temp_tarefas[i] = tarefas[i];
         
         /* Ordenacao das descricoes por ordem alfabetica */
         order_descriptions(temp_tarefas, id_tarefa);
         
         /* passar para o array os ids das tarefas ja ordenadas */
-        for(i = 0; i < id_tarefa; i++)
+        for(i = MIN_TAREFAS; i < id_tarefa; i++)
             ids[i] = temp_tarefas[i].id;
     }
 
     /* Apresentar no terminal os ids que interessam */
-    
-    /* Variavel para verificar se o ID existe */
-    int id_existence = 1;
-    for(int k = 0; k < i; k++)
+    for(k = MIN_TAREFAS; k < i; k++)
     {
-        for(int j = 0; j < id_tarefa; j++)
+        for(j = MIN_TAREFAS; j < id_tarefa; j++)
         {
             if(ids[k] == tarefas[j].id)
             {
                 /* saida */
-                printf("%d %s %d %s\n", tarefas[j].id,
+                printf("%d %s #%d %s\n", tarefas[j].id,
                                     tarefas[j].activity,
                                     tarefas[j].duration,
                                     tarefas[j].description);
@@ -190,10 +198,10 @@ void ListTarefas(struct tarefa tarefas[], int id_tarefa, char activity[][USER_AC
 void order_descriptions(struct tarefa temp_tarefas[], int id_tarefa)
 {
     char temp_str[DESCRIPTION_SIZE];
-    int temp_id;
-    for(int i=0; i < id_tarefa; i++)
+    int i, j, temp_id;
+    for(i = MIN_TAREFAS; i < id_tarefa; i++)
     {
-        for(int j = i+1; j < id_tarefa; j++)
+        for(j = i + 1; j < id_tarefa; j++)
         {
             if(strcmp(temp_tarefas[i].description ,temp_tarefas[j].description)>0)
             {
@@ -236,9 +244,9 @@ void AddUserActivity(char tab[][USER_ACTIVITY_SIZE], int choice)
 {
     /* Inicializar variaveis */
     char c;
-    char temp_tab[USER_ACTIVITY_SIZE];
+    char temp_str[USER_ACTIVITY_SIZE];
     int max_check = 0;
-    int max;
+    int max, i;
     
     /* choice == 1: editar users
        choice == 2: editar activities */
@@ -248,28 +256,31 @@ void AddUserActivity(char tab[][USER_ACTIVITY_SIZE], int choice)
         max = MAX_ACTIVITY;
 
     /* Verificar se o comando tem argumentos */
-    if((c = getchar()) == ' ' && (c = getchar()) == '[')
+    if((c = getchar()) == ' ')
     {
-        for(int i = 0; i < USER_ACTIVITY_SIZE; i++)
+        fgets(temp_str, USER_ACTIVITY_SIZE, stdin);
+
+        for (i = 0; i < USER_ACTIVITY_SIZE; i++)
         {
             /* analisar os argumentos do terminal */
-            c = getchar();
-            if(c == ']')
+            if(temp_str[i] == '\n')
+            {
+                temp_str[i] = '\0';
                 break;
+            }
             else
             {
-                if('a' < c && c < 'z' && choice == 2)
+                if('a' <= temp_str[i] && temp_str[i] <= 'z' && choice == 2)
                 {
                     printf("invalid description\n");
                     return;
                 }
-                temp_tab[i] = c;
             }
         }
         /* verificar se os argumentos já existem no array */
-        for(int i = 0; i < max; i++)
+        for(i = MIN_USER_ACTIVITY; i < max; i++)
         {
-            if(strcmp(temp_tab, tab[i]) == 0)
+            if(strcmp(temp_str, tab[i]) == 0)
             {
                 if(choice == 1)
                     printf("user already exists\n");
@@ -279,7 +290,7 @@ void AddUserActivity(char tab[][USER_ACTIVITY_SIZE], int choice)
             }
             else if(strcmp(tab[i], "\0") == 0)
             {
-                strcpy(tab[i], temp_tab);
+                strcpy(tab[i], temp_str);
                 max_check = 1;
                 break;
             }
@@ -288,14 +299,17 @@ void AddUserActivity(char tab[][USER_ACTIVITY_SIZE], int choice)
         if(max_check == 0)
         {
             if(choice == 1)
+            {
                 printf("too many users\n");
+                getchar();
+            }
             else if (choice == 2)
                 printf("too many activities\n");
         }
     }
     else    /* listar users/atividades */
     {
-       int i = 0;
+       i = MIN_USER_ACTIVITY;
        while(strcmp(tab[i], "\0") != 0 && i < max)
        {
            printf("%s\n", tab[i]);
@@ -303,7 +317,6 @@ void AddUserActivity(char tab[][USER_ACTIVITY_SIZE], int choice)
        }
     }
 }
-
 
 void MoveTask(struct tarefa tarefas[], char users[][USER_ACTIVITY_SIZE],
                 char activities[][USER_ACTIVITY_SIZE], int id_tarefa, int time)
@@ -314,7 +327,7 @@ void MoveTask(struct tarefa tarefas[], char users[][USER_ACTIVITY_SIZE],
     scanf("%d %s %[^\n]s", &id, user, activity);
 
     /* verificar se o id da tarefa e valido */
-    if(id_tarefa < id)
+    if(id_tarefa <= id)
     {
         printf("no such task\n");
         return;
@@ -333,6 +346,7 @@ void MoveTask(struct tarefa tarefas[], char users[][USER_ACTIVITY_SIZE],
         printf("no such user\n");
         return;
     }
+
 
     /* verificar se a atividade introduzida existe */
     if(MoveTask_argcheck(activity, activities, MAX_ACTIVITY) != 0)
@@ -361,7 +375,9 @@ void MoveTask(struct tarefa tarefas[], char users[][USER_ACTIVITY_SIZE],
 /* funcao que verifica se o user e a activity existem */
 int MoveTask_argcheck(char argument[], char tab[][USER_ACTIVITY_SIZE], int max_size)
 {
-    for(int i = 0; i < max_size; i++)
+    int i = 0;
+
+    for(i = 0; i < max_size; i++)
     {
         if(strcmp(tab[i], argument) == 0)
             return 0;
@@ -373,10 +389,8 @@ int MoveTask_argcheck(char argument[], char tab[][USER_ACTIVITY_SIZE], int max_s
 void ListActivities(struct tarefa tarefas[], char activities[][USER_ACTIVITY_SIZE], int id_tarefa)
 {
     /* Inicializacao de variaveis*/
-    int ids[MAX_TAREFAS];
     char activity[USER_ACTIVITY_SIZE];
-    char c;
-    int i = 0, j, temp_counter = 0, temp_id, temp_time;
+    int i, j, temp_counter = MIN_TAREFAS, temp_id, temp_time;
     struct tarefa temp_tarefas[MAX_TAREFAS];
     char temp_str[DESCRIPTION_SIZE];
     
@@ -392,8 +406,9 @@ void ListActivities(struct tarefa tarefas[], char activities[][USER_ACTIVITY_SIZ
     }
 
     /* mudar para um array temporario as tarefas em certa atividade */
-    for(i = 0; i < id_tarefa; i++)
+    for(i = MIN_TAREFAS; i < id_tarefa; i++)
     {
+        
         if(strcmp(tarefas[i].activity, activity) == 0)
         {
             temp_tarefas[temp_counter].id = tarefas[i].id;
@@ -404,9 +419,9 @@ void ListActivities(struct tarefa tarefas[], char activities[][USER_ACTIVITY_SIZ
     }
 
     /* organizar o array */
-    for(i=0; i < temp_counter; i++)
+    for(i = MIN_TAREFAS; i < temp_counter; i++)
     {
-        for(j = i+1; j < temp_counter; j++)
+        for(j = i + 1; j < temp_counter; j++)
         {
             if( temp_tarefas[i].time > temp_tarefas[j].time || 
                 (temp_tarefas[i].time == temp_tarefas[j].time 
@@ -428,6 +443,6 @@ void ListActivities(struct tarefa tarefas[], char activities[][USER_ACTIVITY_SIZ
     }
 
     /* saida */
-    for(i = 0; i < temp_counter; i++)
+    for(i = MIN_TAREFAS; i < temp_counter; i++)
         printf("%d %d %s\n", temp_tarefas[i].id, temp_tarefas[i].time, temp_tarefas[i].description);
 }
