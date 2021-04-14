@@ -88,14 +88,23 @@ int main()
 
 int AddTarefa(struct tarefa tarefas[], int id_tarefa, char activity[USER_ACTIVITY_SIZE])
 {
-    int i;
+    int i, p;
     /* Criar nova tarefa para depois ser introduzida no vector das tarefas */
     struct tarefa nova_tarefa;
 
     /* entrada */
     scanf("%d", &nova_tarefa.duration);
-    getchar();
     scanf("%[^\n]s", nova_tarefa.description);
+
+    p = 0;
+    for(i = 0; i < USER_ACTIVITY_SIZE; i++)
+    {
+        if(nova_tarefa.description[i] == ' ' || nova_tarefa.description[i] == '\t')
+            p++;
+        else
+            break;
+    }
+    memmove(nova_tarefa.description, nova_tarefa.description + p, DESCRIPTION_SIZE);
 
 
     /* Verificar se já se chegou ao maximo de tarefas */
@@ -198,22 +207,27 @@ void ListTarefas(struct tarefa tarefas[], int id_tarefa)
 void order_descriptions(struct tarefa temp_tarefas[], int id_tarefa)
 {
     char temp_str[DESCRIPTION_SIZE];
-    int i, j, temp_id;
-    for(i = MIN_TAREFAS; i < id_tarefa; i++)
+    int i, j, temp_id, max;
+
+    for (i = MIN_TAREFAS; i < id_tarefa; i++)
     {
-        for(j = i + 1; j < id_tarefa; j++)
+        max = 1;
+        for(j = MIN_TAREFAS; j < id_tarefa - i; j++)
         {
-            if(strcmp(temp_tarefas[i].description ,temp_tarefas[j].description)>0)
+            if (strcmp(temp_tarefas[j].description ,temp_tarefas[j + 1].description) > 0)
             {
                 /* so precisamos de ordenar as descricoes e os ids */
-                strcpy(temp_str, temp_tarefas[i].description);
-                temp_id = temp_tarefas[i].id;
-                strcpy(temp_tarefas[i].description, temp_tarefas[j].description);
-                temp_tarefas[i].id = temp_tarefas[j].id;
-                strcpy(temp_tarefas[j].description, temp_str);
-                temp_tarefas[j].id = temp_id;
+                strcpy(temp_str, temp_tarefas[j].description);
+                temp_id = temp_tarefas[j].id;
+                strcpy(temp_tarefas[j].description, temp_tarefas[j + 1].description);
+                temp_tarefas[j].id = temp_tarefas[j + 1].id;
+                strcpy(temp_tarefas[j + 1].description, temp_str);
+                temp_tarefas[j + 1].id = temp_id;
+                max = 0;
             }
         }
+        if (max == 1)
+            break;
     }
 }
 
@@ -246,7 +260,7 @@ void AddUserActivity(char tab[][USER_ACTIVITY_SIZE], int choice)
     char c;
     char temp_str[USER_ACTIVITY_SIZE];
     int max_check = 0;
-    int max, i;
+    int max, i, p;
     
     /* choice == 1: editar users
        choice == 2: editar activities */
@@ -257,8 +271,23 @@ void AddUserActivity(char tab[][USER_ACTIVITY_SIZE], int choice)
 
     /* Verificar se o comando tem argumentos */
     if((c = getchar()) == ' ')
-    {
+    {   
         fgets(temp_str, USER_ACTIVITY_SIZE, stdin);
+        
+        p = 0;
+        if (choice == 1)
+        {
+            for(i = 0; i < USER_ACTIVITY_SIZE; i++)
+            {
+                if(temp_str[i] == ' ' || temp_str[i] == '\t')
+                {
+                    p++;
+                }
+                else
+                    break;
+            }
+        } 
+        memmove(temp_str, temp_str + p, USER_ACTIVITY_SIZE);
 
         for (i = 0; i < USER_ACTIVITY_SIZE; i++)
         {
@@ -330,6 +359,12 @@ void MoveTask(struct tarefa tarefas[], char users[][USER_ACTIVITY_SIZE],
     if(id_tarefa <= id)
     {
         printf("no such task\n");
+        return;
+    }
+
+    /* verificar se a atividade da tarefa é a TO DO */
+    if (strcmp(tarefas[id].activity, activity) == 0)
+    {
         return;
     }
 
