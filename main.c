@@ -25,6 +25,8 @@
 #define MIN_TAREFAS 1        /* mínimo de tarefas */
 #define MIN_USER_ACTIVITY 0  /* mínimo de utilizadores e atividades */
 
+/* Mensagens de erro */
+
 
 /* - Declaração da estrutura "tarefa" --------------------------------------- */
 
@@ -512,7 +514,12 @@ void ListActivities(struct tarefa tarefas[], char activities[][USER_ACTIVITY_SIZ
 void order_descriptions(struct tarefa temp_tarefas[], int id_tarefa)
 {
     /* inicializacao de variaveis */
-    int i, j, end;
+    /* contadores */
+    int i, j;
+    /* flag */
+    int end;
+
+    /* bubble sort */
     for (i = MIN_TAREFAS; i < id_tarefa; i++)
     {
         end = 1;
@@ -520,7 +527,7 @@ void order_descriptions(struct tarefa temp_tarefas[], int id_tarefa)
         {
             if (strcmp(temp_tarefas[j].description ,temp_tarefas[j + 1].description) > 0)
             {
-                /* so precisamos de ordenar as descricoes e os ids */
+                /* trocar as tarefas e por end = 0 a indicar que houve trocas*/
                 swaptarefas(temp_tarefas, j);
                 end = 0;
             }
@@ -534,7 +541,12 @@ void order_descriptions(struct tarefa temp_tarefas[], int id_tarefa)
 void order_time(struct tarefa temp_tarefas[], int counter)
 {
     /* inicializacao de variaveis */
-    int i, j, end;
+    /* contadores */
+    int i, j;
+    /* flag */
+    int end;
+
+    /* bubble sort */
     for (i = MIN_TAREFAS; i < counter; i++)
     {
         end = 1;
@@ -542,6 +554,7 @@ void order_time(struct tarefa temp_tarefas[], int counter)
         {
             if (temp_tarefas[j].time > temp_tarefas[j + 1].time)
             {
+                /* trocar as tarefas e por end = 0 a indicar que houve trocas*/
                 swaptarefas(temp_tarefas, j);
                 end = 0;
             }
