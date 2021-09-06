@@ -1,4 +1,4 @@
-# IAED_Projeto1
+# kanban-tool
 
 🇵🇹 - Primeiro projeto de Introdução aos Algoritmos e Estruturas de Dados, 2020/21.
   
